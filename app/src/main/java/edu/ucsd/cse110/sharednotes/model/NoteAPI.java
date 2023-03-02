@@ -7,6 +7,12 @@ import androidx.lifecycle.LiveData;
 
 import com.google.gson.Gson;
 
+import org.json.JSONObject;
+
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -68,10 +74,8 @@ public class NoteAPI {
         try (var response = client.newCall(request).execute()) {
             assert response.body() != null;
             var body = response.body().string();
-            Log.d("GET", body); //gets the correct responsebody
-            // TODO: NEED TO CHANGE STRING INTO NOTE
-            // didn't get it to work yet
-            return new Note("newPost", "newPost", 0);
+            Log.d("GET", body);
+            return Note.fromJSON(body);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -79,24 +83,20 @@ public class NoteAPI {
     }
 
     public void put(Note n) {
-        Log.d("PUTTING title", n.title);
-        Log.d("PUTTING content", n.content);
-        Log.d("PUTTING updatedAt", String.valueOf(n.updatedAt));
-        // correctly gets the Note to upsert to Remote
-
         final MediaType JSON = MediaType.get("application/json; charset=utf-8");
         Gson gson = new Gson();
-        var body = RequestBody.create(gson.toJson(n), JSON);
+        var map = Map.of("content", n.content, "updated_at", n.updatedAt);
+        String s = gson.toJson(map);
+        var body = RequestBody.create(s, JSON);
+        var title = n.title.replace(" ", "%20");
         var request = new Request.Builder()
-                .url("https://sharednotes.goto.ucsd.edu/notes/" + n.title)
-                .method("PUT", null)
-                .post(body)
+                .url("https://sharednotes.goto.ucsd.edu/notes/" + title)
+                .method("PUT", body)
                 .build();
 
         try(var response = client.newCall(request).execute()) {
             assert response.body() != null;
             var b = response.body().string();
-            Log.d("PUT", b);
         } catch (Exception e) {
             e.printStackTrace();
         }

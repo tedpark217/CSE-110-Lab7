@@ -1,5 +1,6 @@
 package edu.ucsd.cse110.sharednotes.model;
 
+import android.os.StrictMode;
 import android.util.Log;
 
 import androidx.lifecycle.LiveData;
@@ -17,12 +18,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import edu.ucsd.cse110.sharednotes.view.NotesAdapter;
 
 public class NoteRepository {
     private final NoteDao dao;
-    private TimeService timeService;
+    private ScheduledFuture<?> clockFuture;
     private NoteAPI server;
 
     public NoteRepository(NoteDao dao) {
@@ -95,29 +98,15 @@ public class NoteRepository {
     // ==============
 
     public LiveData<Note> getRemote(String title) {
-        // TODO: Implement getRemote!
-        // TODO: Set up polling background thread (MutableLiveData?)
-        // TODO: Refer to TimerService from https://github.com/DylanLukes/CSE-110-WI23-Demo5-V2.
 
-        // Start by fetching the note from the server _once_ and feeding it into MutableLiveData.
-        MutableLiveData<Note> note = new MutableLiveData<>();
+        MutableLiveData<Note> note = new MutableLiveData<Note>();
+        Note newNote = server.get(title);
+        note.setValue(newNote);
 
-        TimestampAdapter adapter = new TimestampAdapter();
-
-
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        executor.submit(() -> {
-            note.setValue(server.get(title));
-        });
-
-        // Then, set up a background thread that will poll the server every 3 seconds.
-
-        /**
-        timeService.getTime().observe(this, time -> {
-            executor.submit(() -> {
-                server.get(title);
-            });
-        });**/
+        var executor = Executors.newSingleThreadScheduledExecutor();
+        clockFuture = executor.scheduleAtFixedRate(() -> {
+            note.postValue(server.get(title));
+        }, 0, 3000, TimeUnit.MILLISECONDS);
 
         // You may (but don't have to) want to cache the LiveData's for each title, so that
         // you don't create a new polling thread every time you call getRemote with the same title.
@@ -127,7 +116,6 @@ public class NoteRepository {
     }
 
     public void upsertRemote(Note note) {
-        // TODO: Implement upsertRemote!
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.submit(() -> {
             server.put(note);

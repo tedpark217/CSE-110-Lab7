@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.annotation.SuppressLint;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.util.Log;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
@@ -98,6 +99,8 @@ public class ListActivity extends AppCompatActivity {
         var adapter = setupAdapter(viewModel);
 
         setupViews(viewModel, adapter);
+
+        StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder().permitAll().build());
     }
 
     private ListViewModel setupViewModel() {
@@ -149,6 +152,7 @@ public class ListActivity extends AppCompatActivity {
 
             // ...wait for the database to finish persisting it...
             note.observe(this, noteEntity -> {
+                note.removeObservers(this);
                 // ...and launch NoteActivity with it.
                 var intent = NoteActivity.intentFor(this, noteEntity);
                 startActivity(intent);
