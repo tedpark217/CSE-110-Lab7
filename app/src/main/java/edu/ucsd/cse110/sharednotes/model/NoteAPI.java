@@ -74,12 +74,18 @@ public class NoteAPI {
         try (var response = client.newCall(request).execute()) {
             assert response.body() != null;
             var body = response.body().string();
+
+            JSONObject myJsonObj = new JSONObject(body);
+            String b = myJsonObj.getString("detail");
+            if(b != null){
+                return new Note(title, "");
+            }
             Log.d("GET", body);
             return Note.fromJSON(body);
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return null;
+        return new Note(title, "");
     }
 
     public void put(Note n) {
