@@ -75,9 +75,7 @@ public class NoteAPI {
             assert response.body() != null;
             var body = response.body().string();
 
-            JSONObject myJsonObj = new JSONObject(body);
-            String b = myJsonObj.getString("detail");
-            if(b != null){
+            if("{\"detail\":\"Note not found.\"}".equals(body)){
                 return new Note(title, "");
             }
             Log.d("GET", body);
